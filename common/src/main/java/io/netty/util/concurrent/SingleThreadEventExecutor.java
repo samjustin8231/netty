@@ -824,9 +824,14 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     }
 
     private void execute(Runnable task, boolean immediate) {
+        // 判断execute方法的调用者是不是EventLoop同一个线程
         boolean inEventLoop = inEventLoop();
+        // 增加到任务队列
         addTask(task);
+
+        // //  不是同一个线程，则调用启动方法
         if (!inEventLoop) {
+            // 开启eventloop执行
             startThread();
             if (isShutdown()) {
                 boolean reject = false;
@@ -940,6 +945,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
     private static final long SCHEDULE_PURGE_INTERVAL = TimeUnit.SECONDS.toNanos(1);
 
     private void startThread() {
+        // 未启动，则触发启动
         if (state == ST_NOT_STARTED) {
             if (STATE_UPDATER.compareAndSet(this, ST_NOT_STARTED, ST_STARTED)) {
                 boolean success = false;
@@ -975,6 +981,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
 
     private void doStartThread() {
         assert thread == null;
+        // 这里的executor是初始化EventLoop的时候传进来的
         executor.execute(new Runnable() {
             @Override
             public void run() {
@@ -986,6 +993,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
                 boolean success = false;
                 updateLastExecutionTime();
                 try {
+                    // 创建线程开始执行run方法，所以，每个EventLoop都是执行run
                     SingleThreadEventExecutor.this.run();
                     success = true;
                 } catch (Throwable t) {

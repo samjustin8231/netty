@@ -436,6 +436,8 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     @Override
     protected void run() {
         int selectCnt = 0;
+
+        // 死循环
         for (; ; ) {
             try {
                 int strategy;
@@ -575,8 +577,12 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         }
     }
 
+    /**
+     * select key
+     */
     private void processSelectedKeys() {
         if (selectedKeys != null) {
+            // 不用jdk的selector.selectedKeys()，性能更好(1% ~ 2%)，垃圾回收更少
             processSelectedKeysOptimized();
         } else {
             processSelectedKeysPlain(selector.selectedKeys());
@@ -642,6 +648,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
     }
 
     private void processSelectedKeysOptimized() {
+        // 轮询事件
         for (int i = 0; i < selectedKeys.size; ++i) {
             final SelectionKey k = selectedKeys.keys[i];
             // null out entry in the array to allow to have it GC'ed once the Channel close
@@ -693,6 +700,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
         }
 
         try {
+            // 读取到事件
             int readyOps = k.readyOps();
             // We first need to call finishConnect() before try to trigger a read(...) or write(...) as otherwise
             // the NIO JDK channel implementation may throw a NotYetConnectedException.
@@ -714,7 +722,10 @@ public final class NioEventLoop extends SingleThreadEventLoop {
 
             // Also check for readOps of 0 to workaround possible JDK bug which may otherwise lead
             // to a spin loop
+            // op_accept，op_read事件
             if ((readyOps & (SelectionKey.OP_READ | SelectionKey.OP_ACCEPT)) != 0 || readyOps == 0) {
+                // 如果是op_accept事件，则调用实现类：AbstractNioMessageChannel；
+                // 如果是op_read事件， 则调用实现类：AbstractNioByteChannel
                 unsafe.read();
             }
         } catch (CancelledKeyException ignored) {

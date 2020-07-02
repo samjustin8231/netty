@@ -72,6 +72,7 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
             try {
                 try {
                     do {
+                        // localRead = 1代表创建了连接
                         int localRead = doReadMessages(readBuf);
                         if (localRead == 0) {
                             break;
@@ -82,7 +83,7 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
                         }
 
                         allocHandle.incMessagesRead(localRead);
-                    } while (allocHandle.continueReading());
+                    } while (allocHandle.continueReading()); // 是否继续读，实现类：DefaultMaxBytesRecvByteBufAllocator
                 } catch (Throwable t) {
                     exception = t;
                 }
@@ -90,6 +91,7 @@ public abstract class AbstractNioMessageChannel extends AbstractNioChannel {
                 int size = readBuf.size();
                 for (int i = 0; i < size; i ++) {
                     readPending = false;
+                    // op_accept事件，
                     pipeline.fireChannelRead(readBuf.get(i));
                 }
                 readBuf.clear();

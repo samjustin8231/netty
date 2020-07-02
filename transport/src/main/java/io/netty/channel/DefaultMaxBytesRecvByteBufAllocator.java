@@ -37,6 +37,8 @@ public class DefaultMaxBytesRecvByteBufAllocator implements MaxBytesRecvByteBufA
         private int bytesToRead;
         private int lastBytesRead;
         private int attemptBytesRead;
+
+        // 是否读满了
         private final UncheckedBooleanSupplier defaultMaybeMoreSupplier = new UncheckedBooleanSupplier() {
             @Override
             public boolean get() {
@@ -46,6 +48,7 @@ public class DefaultMaxBytesRecvByteBufAllocator implements MaxBytesRecvByteBufA
 
         @Override
         public ByteBuf allocate(ByteBufAllocator alloc) {
+            // guess尽可能分配合适的值
             return alloc.ioBuffer(guess());
         }
 
@@ -77,11 +80,22 @@ public class DefaultMaxBytesRecvByteBufAllocator implements MaxBytesRecvByteBufA
             return lastBytesRead;
         }
 
+        /**
+         * 是否继续读
+         *
+         * @return
+         */
         @Override
         public boolean continueReading() {
             return continueReading(defaultMaybeMoreSupplier);
         }
 
+        /**
+         * 是否继续读
+         * op_accept的事件，bytesToRead=0(因为是创建连接，读取的字节数-0)，故返回false，不会继续读；
+         * @param maybeMoreDataSupplier A supplier that determines if there maybe more data to read.
+         * @return
+         */
         @Override
         public boolean continueReading(UncheckedBooleanSupplier maybeMoreDataSupplier) {
             // Keep reading if we are allowed to read more bytes, and our last read filled up the buffer we provided.
@@ -182,7 +196,7 @@ public class DefaultMaxBytesRecvByteBufAllocator implements MaxBytesRecvByteBufA
 
     @Override
     public DefaultMaxBytesRecvByteBufAllocator maxBytesPerReadPair(int maxBytesPerRead,
-            int maxBytesPerIndividualRead) {
+                                                                   int maxBytesPerIndividualRead) {
         checkMaxBytesPerReadPair(maxBytesPerRead, maxBytesPerIndividualRead);
         // There is a dependency between this.maxBytesPerRead and this.maxBytesPerIndividualRead (a < b).
         // Write operations must be synchronized, but independent read operations can just be volatile.

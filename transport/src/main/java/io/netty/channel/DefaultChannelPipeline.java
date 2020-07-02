@@ -1402,7 +1402,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
         @Override
         public void channelActive(ChannelHandlerContext ctx) {
             ctx.fireChannelActive();
-
+            // 注册读事件：包括：创建连接，读数据
             readIfIsAutoRead();
         }
 

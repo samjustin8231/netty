@@ -468,7 +468,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
 
             AbstractChannel.this.eventLoop = eventLoop;
 
-            // 是否是NIO eventLoop的线程
+            // 自己的线程是否是NIO eventLoop的线程，即是否启动了NioEventLoop
             if (eventLoop.inEventLoop()) {
                 register0(promise);
             } else {
